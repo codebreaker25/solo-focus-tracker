@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Migration Tool - Import Akash's Data</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        :root {
+            --bg: #0d1117;
+            --card: #161b22;
+            --text: #c9d1d9;
+            --border: #30363d;
+            --accent: #2ea043;
+            --danger: #da3633;
+            --warning: #ffa000;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card);
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        
+        h1 {
+            color: var(--accent);
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #0d1117;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .instruction {
+            color: #8b949e;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .instruction strong {
+            color: var(--text);
+        }
+        
+        .code-box {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #79c0ff;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #21262d;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #161b22;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .status.success {
+            background: rgba(46, 160, 67, 0.2);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            display: block;
+        }
+        
+        .status.error {
+            background: rgba(218, 54, 51, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            display: block;
+        }
+        
+        .warning-box {
+            background: rgba(255, 160, 0, 0.1);
+            border: 1px solid var(--warning);
+            padding: 15px;
+            border-radius: 6px;
+            color: var(--warning);
+            margin-bottom: 20px;
+        }
+        
+        .preview {
+            margin-top: 20px;
+            padding: 15px;
+            background: #161b22;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+        
+        .preview-label {
+            color: #8b949e;
+        }
+        
+        .preview-value {
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Data Migration Tool</h1>
+        <div class="subtitle">Import Akash's data from Firebase to your new solo tracker</div>
+        
+        <!-- Step 1: Fetch from Firebase -->
+        <div class="section">
+            <div class="section-title">Step 1: Fetch Your Firebase Data</div>
+            <div class="instruction">
+                <strong>Easiest Method:</strong> Click the button below to fetch Akash's data directly from Firebase:
+            </div>
+            <button class="btn-primary" onclick="fetchFromFirebase()">🔥 Fetch Akash's Data from Firebase</button>
+            <div class="instruction" style="margin-top: 15px;">
+                <strong>Or manually:</strong> Open this link, copy all the JSON, and paste in Step 2:<br>
+                <a href="https://squad-goals-aab2d-default-rtdb.firebaseio.com/users/user2.json" target="_blank" style="color: #79c0ff; text-decoration: underline;">https://squad-goals-aab2d-default-rtdb.firebaseio.com/users/user2.json</a>
+            </div>
+        </div>
+        
+        <!-- Step 2: Paste & Preview -->
+        <div class="section">
+            <div class="section-title">Step 2: Paste Firebase Data</div>
+            <div class="instruction">
+                Paste the JSON data you copied from Firebase:
+            </div>
+            <textarea id="firebase-data" placeholder='Paste your Firebase JSON here, e.g.:
+{
+  "currentTask": "Coding",
+  "dailyGoal": 3600000,
+  "history": {
+    "2026-01-01": 7200000,
+    "2026-01-02": 10800000
+  },
+  "sessions": {
+    "xyz123": {
+      "task": "Learning React",
+      "startTime": 1704067200000,
+      "endTime": 1704074400000,
+      "duration": 7200000
+    }
+  }
+}'></textarea>
+            <button class="btn-primary" onclick="previewData()">Preview Data</button>
+            
+            <div id="preview-section"></div>
+            <div id="status-message" class="status"></div>
+        </div>
+        
+        <!-- Step 3: Import -->
+        <div class="section">
+            <div class="section-title">Step 3: Import to Solo Tracker</div>
+            <div class="warning-box">
+                ⚠️ <strong>Warning:</strong> This will overwrite any existing data in your solo tracker. Make sure you've backed up if needed.
+            </div>
+            <button class="btn-primary" id="import-btn" onclick="importData()" disabled>Import Data</button>
+            <button class="btn-secondary" onclick="window.open('index.html', '_blank')">Open Solo Tracker</button>
+        </div>
+        
+        <!-- Quick Test Data -->
+        <div class="section">
+            <div class="section-title">🧪 Testing Only</div>
+            <div class="instruction">
+                Generate sample data for testing (skip this if you have real Firebase data):
+            </div>
+            <button class="btn-secondary" onclick="generateSampleData()">Generate Sample Data</button>
+        </div>
+    </div>
+    
+    <script>
+        let parsedData = null;
+        
+        function fetchFromFirebase() {
+            const statusEl = document.getElementById('status-message');
+            showStatus('success', '⏳ Fetching data from Firebase...');
+            
+            fetch('https://squad-goals-aab2d-default-rtdb.firebaseio.com/users/user2.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data from Firebase');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data) {
+                        throw new Error('No data found for Akash (user2)');
+                    }
+                    document.getElementById('firebase-data').value = JSON.stringify(data, null, 2);
+                    showStatus('success', '✅ Data fetched! Now click "Preview Data" below.');
+                })
+                .catch(error => {
+                    showStatus('error', `❌ Error fetching data: ${error.message}. Try the manual method instead.`);
+                });
+        }
+        
+        function previewData() {
+            const input = document.getElementById('firebase-data').value.trim();
+            const statusEl = document.getElementById('status-message');
+            const previewEl = document.getElementById('preview-section');
+            const importBtn = document.getElementById('import-btn');
+            
+            if (!input) {
+                showStatus('error', 'Please paste your Firebase data first');
+                return;
+            }
+            
+            try {
+                parsedData = JSON.parse(input);
+                
+                // Validate structure
+                if (!parsedData || typeof parsedData !== 'object') {
+                    throw new Error('Invalid data structure');
+                }
+                
+                // Calculate stats
+                const history = parsedData.history || {};
+                const sessions = parsedData.sessions || {};
+                const goals = parsedData.goals || {};
+                
+                let totalMs = 0;
+                let daysTracked = 0;
+                Object.values(history).forEach(ms => {
+                    totalMs += ms;
+                    if (ms > 0) daysTracked++;
+                });
+                
+                const sessionCount = Object.keys(sessions).length;
+                const streak = calculateStreak(history, goals, parsedData.dailyGoal || 3600000);
+                
+                // Show preview
+                previewEl.innerHTML = `
+                    <div class="preview">
+                        <div class="preview-item">
+                            <span class="preview-label">Total Hours Tracked:</span>
+                            <span class="preview-value">${(totalMs / (1000 * 60 * 60)).toFixed(1)}h</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Days with Activity:</span>
+                            <span class="preview-value">${daysTracked} days</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Completed Sessions:</span>
+                            <span class="preview-value">${sessionCount} sessions</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Current Streak:</span>
+                            <span class="preview-value">🔥 ${streak} days</span>
+                        </div>
+                        <div class="preview-item">
+                            <span class="preview-label">Default Daily Goal:</span>
+                            <span class="preview-value">${(parsedData.dailyGoal / (1000 * 60 * 60)).toFixed(1)}h</span>
+                        </div>
+                    </div>
+                `;
+                
+                showStatus('success', '✅ Data validated successfully! You can now import.');
+                importBtn.disabled = false;
+                
+            } catch (error) {
+                showStatus('error', `❌ Error parsing JSON: ${error.message}`);
+                parsedData = null;
+                importBtn.disabled = true;
+                previewEl.innerHTML = '';
+            }
+        }
+        
+        function importData() {
+            if (!parsedData) {
+                showStatus('error', 'Please preview data first');
+                return;
+            }
+            
+            if (!confirm('⚠️ This will overwrite your current tracker data. Continue?')) {
+                return;
+            }
+            
+            try {
+                // Convert Firebase structure to solo tracker structure
+                const converted = {
+                    isStudying: false,
+                    startTime: null,
+                    currentTask: parsedData.currentTask || null,
+                    dailyGoal: parsedData.dailyGoal || 3600000,
+                    history: parsedData.history || {},
+                    goals: parsedData.goals || {},
+                    goalLocks: parsedData.goalLocks || {},
+                    sessions: []
+                };
+                
+                // Convert sessions from object to array
+                const sessionsObj = parsedData.sessions || {};
+                converted.sessions = Object.values(sessionsObj).map(s => ({
+                    task: s.task,
+                    startTime: s.startTime,
+                    endTime: s.endTime,
+                    duration: s.duration
+                }));
+                
+                // Sort sessions by end time
+                converted.sessions.sort((a, b) => a.endTime - b.endTime);
+                
+                // Save to localStorage
+                localStorage.setItem('focusTracker', JSON.stringify(converted));
+                
+                showStatus('success', '✅ Import successful! Opening your tracker...');
+                
+                setTimeout(() => {
+                    window.open('index.html', '_blank');
+                }, 1500);
+                
+            } catch (error) {
+                showStatus('error', `❌ Import failed: ${error.message}`);
+            }
+        }
+        
+        function generateSampleData() {
+            const sampleData = {
+                currentTask: "Building solo tracker",
+                dailyGoal: 3600000,
+                history: {},
+                goals: {},
+                sessions: {}
+            };
+            
+            // Generate 6 days of sample history
+            const now = Date.now();
+            for (let i = 6; i >= 1; i--) {
+                const d = new Date(now - (i * 24 * 60 * 60 * 1000));
+                const dateStr = getDayString(d.getTime());
+                const hours = 1 + Math.random() * 3; // Random 1-4 hours
+                sampleData.history[dateStr] = Math.floor(hours * 3600000);
+                sampleData.goals[dateStr] = 3600000;
+                
+                // Add a session for each day
+                const sessionId = `session_${i}`;
+                sampleData.sessions[sessionId] = {
+                    task: `Sample task ${i}`,
+                    startTime: d.getTime(),
+                    endTime: d.getTime() + sampleData.history[dateStr],
+                    duration: sampleData.history[dateStr]
+                };
+            }
+            
+            document.getElementById('firebase-data').value = JSON.stringify(sampleData, null, 2);
+            showStatus('success', '✅ Sample data generated! Click "Preview Data" to review.');
+        }
+        
+        function calculateStreak(history, goals, defaultGoal) {
+            let streak = 0;
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
+            
+            for (let i = 0; i < 365; i++) {
+                const dateStr = getDayString(d.getTime());
+                const ms = history[dateStr] || 0;
+                const target = goals[dateStr] || defaultGoal;
+                
+                if (ms >= target) {
+                    streak++;
+                } else {
+                    break;
+                }
+                
+                d.setDate(d.getDate() - 1);
+            }
+            
+            return streak;
+        }
+        
+        function getDayString(ts = Date.now()) {
+            const d = new Date(ts);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function showStatus(type, message) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.className = `status ${type}`;
+            statusEl.textContent = message;
+        }
+    </script>
+</body>
+</html>
