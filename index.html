@@ -1370,27 +1370,39 @@
             const todayMs = tracker.history[todayStr] || 0;
             const todayGoal = tracker.goals[todayStr] || tracker.dailyGoal;
             const streak = calculateStreak();
-            const todaySessions = tracker.sessions.filter(s => getDayString(s.endTime) === todayStr).length;
+            const last7Days = getLast7DaysMs();
             
             let score = 0;
             
-            // Goal completion (40 points)
+            // Goal completion (50 points) - your daily progress
             const goalPct = Math.min((todayMs / todayGoal) * 100, 100);
-            score += (goalPct / 100) * 40;
+            score += (goalPct / 100) * 50;
             
-            // Streak bonus (30 points)
+            // Streak bonus (30 points) - consistency matters
             score += Math.min(streak * 5, 30);
             
-            // Session quality (30 points) - multiple sessions better than one long one
-            if (todaySessions > 0) {
-                const avgSessionLength = todayMs / todaySessions;
-                const idealSession = 2 * 3600000; // 2 hours
-                const sessionScore = Math.min((avgSessionLength / idealSession) * 30, 30);
-                score += sessionScore * 0.5; // 50% weight
-                score += Math.min(todaySessions * 3, 15); // Bonus for multiple sessions
-            }
+            // Weekly consistency (20 points) - active days in last 7 days
+            const daysWithData = Object.keys(tracker.history).filter(d => {
+                const date = new Date(d);
+                const today = new Date();
+                const daysDiff = Math.floor((today - date) / (24 * 60 * 60 * 1000));
+                return daysDiff >= 0 && daysDiff < 7 && tracker.history[d] > 0;
+            }).length;
+            score += Math.min(daysWithData * 3, 20);
             
             return Math.round(Math.min(score, 100));
+        }
+        
+        function getLast7DaysMs() {
+            const today = new Date();
+            let total = 0;
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                const dateStr = getDayString(d.getTime());
+                total += tracker.history[dateStr] || 0;
+            }
+            return total;
         }
         
         // WEEKLY REPORTS (Rolling 7-day periods)
