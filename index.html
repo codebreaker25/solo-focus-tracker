@@ -1392,27 +1392,46 @@
             return Math.round(Math.min(score, 100));
         }
         
-        // WEEKLY REPORTS
+        // WEEKLY REPORTS (Rolling 7-day periods)
         function checkWeeklyReport() {
-            const now = Date.now();
-            const lastReport = tracker.weeklyReports[tracker.weeklyReports.length - 1];
+            if (Object.keys(tracker.history).length === 0) return;
             
-            if (!lastReport || (now - lastReport.weekEnd) > (7 * 24 * 60 * 60 * 1000)) {
-                generateWeeklyReport();
+            // Find earliest date in history
+            const dates = Object.keys(tracker.history).sort();
+            if (dates.length === 0) return;
+            
+            const firstDate = new Date(dates[0]);
+            const today = new Date();
+            
+            // Calculate total days since first date
+            const daysSinceStart = Math.floor((today - firstDate) / (24 * 60 * 60 * 1000));
+            
+            // How many complete 7-day periods?
+            const completedWeeks = Math.floor(daysSinceStart / 7);
+            
+            // Generate reports for any missing weeks
+            for (let week = 0; week <= completedWeeks; week++) {
+                const weekStart = new Date(firstDate);
+                weekStart.setDate(firstDate.getDate() + (week * 7));
+                weekStart.setHours(0, 0, 0, 0);
+                
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                weekEnd.setHours(23, 59, 59, 999);
+                
+                // Check if this report already exists
+                const exists = tracker.weeklyReports.some(r => 
+                    r.weekStart === weekStart.getTime()
+                );
+                
+                // Only generate if week is complete or it's the current week with data
+                if (!exists && (weekEnd < today || week === completedWeeks)) {
+                    generateWeeklyReport(weekStart, weekEnd);
+                }
             }
         }
         
-        function generateWeeklyReport() {
-            const today = new Date();
-            const dayOfWeek = today.getDay();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - dayOfWeek);
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            weekEnd.setHours(23, 59, 59, 999);
-            
+        function generateWeeklyReport(weekStart, weekEnd) {
             // Calculate week stats
             let totalMs = 0;
             let daysActive = 0;
@@ -1437,6 +1456,7 @@
             const report = {
                 weekStart: weekStart.getTime(),
                 weekEnd: weekEnd.getTime(),
+                weekNumber: tracker.weeklyReports.length + 1,
                 totalHours: totalMs / (1000 * 60 * 60),
                 daysActive,
                 totalSessions,
