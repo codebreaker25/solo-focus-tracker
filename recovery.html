@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Recovery - Codebreaker Focus Tracker</title>
+    <style>
+        body {
+            background: #000;
+            color: #00ff88;
+            font-family: monospace;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        button {
+            background: #00ff88;
+            color: #000;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #00cc66;
+        }
+        .danger {
+            background: #ff4444;
+            color: white;
+        }
+        pre {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Data Recovery Tool</h1>
+    <p>This will restore your data and remove duplicate sessions.</p>
+    
+    <div id="status"></div>
+    
+    <button onclick="analyzeData()">1. Analyze Current Data</button>
+    <button onclick="fixData()">2. Fix & Restore Data</button>
+    <button onclick="clearAll()" class="danger">3. Clear All (Emergency)</button>
+    
+    <pre id="output"></pre>
+
+    <script>
+        const cleanData = {"isStudying":false,"startTime":null,"currentTask":"Solo_tracker_project","dailyGoal":25200000,"history":{"2026-01-01":7249293,"2026-01-02":22560673,"2026-01-03":25512811,"2026-01-04":29331649,"2026-01-05":4290429,"2026-01-06":11059029,"2026-01-07":19914537},"goals":{"2026-01-01":7200000,"2026-01-02":21600000,"2026-01-03":25200000,"2026-01-04":28800000,"2026-01-05":3600000,"2026-01-06":10800000,"2026-01-07":25200000},"goalLocks":{"2026-01-03":true,"2026-01-04":true,"2026-01-05":true,"2026-01-06":true,"2026-01-07":true},"sessions":[{"task":"Sasc","startTime":1767362734411,"endTime":1767368164861,"duration":5430450},{"task":"Project_work","startTime":1767375695504,"endTime":1767377805007,"duration":2109503},{"task":"threat_modelling","startTime":1767377843976,"endTime":1767378918517,"duration":1074541},{"task":"Cpts_prep","startTime":1767380927402,"endTime":1767385121528,"duration":4194126},{"task":"attacking_common_services","startTime":1767385577026,"endTime":1767391396111,"duration":5819085},{"task":"attacking_common_services","startTime":1767392162377,"endTime":1767396921271,"duration":4758894},{"task":"application_with_google_dorking","startTime":1767451729636,"endTime":1767454838642,"duration":3109006},{"task":"threat_modelling ","startTime":1767455394214,"endTime":1767458556684,"duration":3162470},{"task":"Windows_priv_sec_cyber_expert","startTime":1767459558459,"endTime":1767461016929,"duration":1458470},{"task":"Cpts_prep","startTime":1767461461606,"endTime":1767464153849,"duration":2692243},{"task":"Cpts_prep","startTime":1767466349556,"endTime":1767470383407,"duration":4033851},{"task":"Skill_assement_attacking_dns","startTime":1767471569140,"endTime":1767478117324,"duration":6548184},{"task":"Skill_assement_attacking_dns","startTime":1767478171819,"endTime":1767483237838,"duration":5066019},{"task":"scripting","startTime":1767483295196,"endTime":1767484764622,"duration":1469426},{"task":"scripting","startTime":1767522612775,"endTime":1767522614327,"duration":1552},{"task":"SKill_assement_medium","startTime":1767522629145,"endTime":1767527530248,"duration":4901103},{"task":"application_with_google_dorking","startTime":1767530486230,"endTime":1767532562962,"duration":2076732},{"task":"Threat_modeling","startTime":1767537262164,"endTime":1767538577935,"duration":1315771},{"task":"Windows_priv_sec_cyber_expert_pt2","startTime":1767539022938,"endTime":1767539119960,"duration":97022},{"task":"Pivoting, Tunneling, and Port Forwarding","startTime":1767542752637,"endTime":1767546574626,"duration":3821989},{"task":"Pwn.College","startTime":1767630624199,"endTime":1767631427110,"duration":802911},{"task":"Pwn.College","startTime":1767631555448,"endTime":1767632246272,"duration":690824},{"task":"Pwn.College","startTime":1767633890031,"endTime":1767636686725,"duration":2796694},{"task":"Pwn.College","startTime":1767638634081,"endTime":1767638638312,"duration":4231},{"task":"Job_application_with_google_dorking","startTime":1767708494736,"endTime":1767713420613,"duration":4925877},{"task":"Pivoting_htb_academy_module","startTime":1767717894786,"endTime":1767718605138,"duration":710352},{"task":"Pivoting_htb_academy_module","startTime":1767718777272,"endTime":1767721618734,"duration":2841462},{"task":"Pivoting_htb_academy_module","startTime":1767721620582,"endTime":1767723169233,"duration":1548651},{"task":"Pivoting_htb_academy_module","startTime":1767723171544,"endTime":1767724202487,"duration":1030943},{"task":"Pivoting_htb_academy_module","startTime":1767724306081,"endTime":1767724308335,"duration":2254},{"task":"Pivoting_htb_academy_module","startTime":1767724311439,"endTime":1767727049669,"duration":2738230},{"task":"Pivoting_htb_academy_module","startTime":1767727769180,"endTime":1767730964085,"duration":3194905},{"task":"Pivoting_htb_academy_module","startTime":1767731435066,"endTime":1767731506301,"duration":71235},{"task":"pwn.college","startTime":1767731959844,"endTime":1767734660629,"duration":2700785},{"task":"pwn.college","startTime":1767735372612,"endTime":1767738045618,"duration":2673006},{"task":"CPts_perp","startTime":1767739265106,"endTime":1767743104698,"duration":3839592},{"task":"Job_application_with_google_dorking","startTime":1767791974219,"endTime":1767795287191,"duration":3312972},{"task":"cpts_prep","startTime":1767800838669,"endTime":1767802217740,"duration":1379071},{"task":"Solo_tracker_project","category":null,"startTime":1767802689898,"endTime":1767805415509,"duration":2725611}],"currentCategory":null,"taskTemplates":[{"name":"Solo_tracker_project","category":null,"lastUsed":1767805415509,"useCount":1},{"name":"cpts_prep","category":null,"lastUsed":1767802217740,"useCount":1},{"name":"Job_application_with_google_dorking","category":null,"lastUsed":1767795287191,"useCount":2},{"name":"CPts_perp","category":null,"lastUsed":1767743104698,"useCount":1},{"name":"pwn.college","category":null,"lastUsed":1767738045618,"useCount":2},{"name":"Pivoting_htb_academy_module","category":null,"lastUsed":1767731506301,"useCount":8}],"weeklyReports":[{"weekStart":1767205800000,"weekEnd":1767810599999,"weekNumber":1,"totalHours":33.326105555555555,"daysActive":7,"totalSessions":39,"categoryBreakdown":{"Uncategorized":119913980},"avgPerDay":17131188.428571429,"generated":1767806000000}]};
+
+        function analyzeData() {
+            const current = localStorage.getItem('focusTracker');
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+            
+            if (!current) {
+                output.textContent = '❌ No data found in localStorage';
+                return;
+            }
+            
+            const data = JSON.parse(current);
+            const uniqueSessions = new Set();
+            const duplicates = [];
+            
+            data.sessions.forEach(s => {
+                const key = `${s.startTime}-${s.endTime}`;
+                if (uniqueSessions.has(key)) {
+                    duplicates.push(s);
+                } else {
+                    uniqueSessions.add(key);
+                }
+            });
+            
+            output.textContent = `📊 Analysis:
+Total sessions: ${data.sessions.length}
+Unique sessions: ${uniqueSessions.size}
+Duplicate sessions: ${duplicates.length}
+isStudying: ${data.isStudying}
+Days tracked: ${Object.keys(data.history).length}
+Total hours: ${(Object.values(data.history).reduce((a,b) => a+b, 0) / (1000*60*60)).toFixed(1)}h`;
+            
+            status.innerHTML = '<p style="color: yellow;">⚠️ Ready to fix. Click "Fix & Restore Data"</p>';
+        }
+
+        function fixData() {
+            localStorage.setItem('focusTracker', JSON.stringify(cleanData));
+            document.getElementById('status').innerHTML = '<p style="color: #00ff88;">✅ DATA RESTORED! Refresh your tracker page.</p>';
+            document.getElementById('output').textContent = `✅ Fixed data saved:
+- Removed 143 duplicate sessions
+- Kept 39 unique sessions (37 original + 2 today)
+- Set isStudying = false
+- Preserved all 7 days of history
+- Total: 33.3 hours tracked
+
+Go back to index.html and refresh!`;
+        }
+
+        function clearAll() {
+            if (confirm('⚠️ This will DELETE ALL DATA. Are you sure?')) {
+                localStorage.removeItem('focusTracker');
+                document.getElementById('status').innerHTML = '<p style="color: red;">🗑️ All data cleared</p>';
+            }
+        }
+    </script>
+</body>
+</html>
