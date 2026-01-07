@@ -985,6 +985,12 @@
             <div class="stats-title">Deep Analytics</div>
             <div class="analytics-grid" id="analytics-container"></div>
         </div>
+        
+        <!-- Weekly Reports History -->
+        <div class="analytics-card">
+            <div class="stats-title">Weekly Reports</div>
+            <div id="weekly-reports-list"></div>
+        </div>
     </div>
     
     <!-- Day Detail Modal -->
@@ -1583,6 +1589,7 @@
             renderStats();
             renderYearCalendar();
             renderAnalytics();
+            renderWeeklyReportsList();
         }
         
         function renderStatus() {
@@ -1878,6 +1885,78 @@
                     <div class="insight-desc">Keep the streak alive!</div>
                 </div>
             `;
+        }
+        
+        function renderWeeklyReportsList() {
+            const container = document.getElementById('weekly-reports-list');
+            if (!container) return;
+            
+            if (tracker.weeklyReports.length === 0) {
+                container.innerHTML = '<p style="opacity: 0.5; text-align: center; padding: 20px;">Complete 7 days to see your first weekly report</p>';
+                return;
+            }
+            
+            let html = '<div style="display: grid; gap: 15px;">';
+            
+            // Show reports in reverse order (newest first)
+            [...tracker.weeklyReports].reverse().forEach((report, index) => {
+                const start = new Date(report.weekStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const end = new Date(report.weekEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const weekLabel = index === 0 ? '📌 Current Week' : `Week ${report.weekNumber}`;
+                
+                html += `
+                    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-size: 1.1rem; font-weight: 600; color: var(--accent);">${weekLabel}</div>
+                                <div style="font-size: 0.85rem; opacity: 0.7;">${start} - ${end}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">${report.totalHours.toFixed(1)}h</div>
+                                <div style="font-size: 0.85rem; opacity: 0.7;">${(report.avgPerDay / (1000 * 60 * 60)).toFixed(1)}h avg/day</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.9rem;">
+                            <div>
+                                <div style="opacity: 0.7;">Sessions</div>
+                                <div style="font-weight: 600;">${report.totalSessions}</div>
+                            </div>
+                            <div>
+                                <div style="opacity: 0.7;">Active Days</div>
+                                <div style="font-weight: 600;">${report.daysActive}/7</div>
+                            </div>
+                            <div>
+                                <div style="opacity: 0.7;">Avg Session</div>
+                                <div style="font-weight: 600;">${formatTime(report.totalHours * 3600000 / report.totalSessions)}</div>
+                            </div>
+                        </div>`;
+                
+                if (Object.keys(report.categoryBreakdown).length > 0) {
+                    const sorted = Object.entries(report.categoryBreakdown).sort((a, b) => b[1] - a[1]);
+                    html += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">';
+                    html += '<div style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 8px;">Top Categories</div>';
+                    sorted.slice(0, 3).forEach(([cat, ms]) => {
+                        const pct = (ms / (report.totalHours * 3600000)) * 100;
+                        html += `
+                            <div style="margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 3px;">
+                                    <span>${cat}</span>
+                                    <span style="opacity: 0.8;">${(ms / (1000 * 60 * 60)).toFixed(1)}h</span>
+                                </div>
+                                <div style="background: var(--bg); height: 6px; border-radius: 3px; overflow: hidden;">
+                                    <div style="background: var(--accent); height: 100%; width: ${pct}%;"></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
         }
         
         // Day Modal Functions
