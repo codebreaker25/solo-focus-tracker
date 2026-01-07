@@ -841,12 +841,6 @@
             </div>
         </div>
         
-        <!-- Recent Sessions -->
-        <div class="session-log">
-            <div class="stats-title">Recent Sessions</div>
-            <div id="session-log-container"></div>
-        </div>
-        
         <!-- Year Calendar -->
         <div class="year-calendar">
             <div class="stats-title">2026 Full Year</div>
@@ -1066,7 +1060,6 @@
             renderTimers();
             renderHeatmap();
             renderStats();
-            renderSessions();
             renderYearCalendar();
             renderAnalytics();
         }
@@ -1162,31 +1155,6 @@
             document.getElementById('stat-total').textContent = formatHours(totalMs);
             document.getElementById('stat-sessions').textContent = tracker.sessions.length;
             document.getElementById('stat-avg').textContent = formatHours(avgMs);
-        }
-        
-        function renderSessions() {
-            const container = document.getElementById('session-log-container');
-            const recent = tracker.sessions.slice(-10).reverse();
-            
-            if (recent.length === 0) {
-                container.innerHTML = '<div class="empty-state">No sessions yet. Start your first focus session!</div>';
-                return;
-            }
-            
-            container.innerHTML = recent.map(session => {
-                const date = new Date(session.endTime);
-                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                return `
-                    <div class="session-item">
-                        <div class="session-info">
-                            <div class="session-task">${session.task}</div>
-                            <div class="session-date">${dateStr}</div>
-                        </div>
-                        <div class="session-duration">${formatTime(session.duration)}</div>
-                    </div>
-                `;
-            }).join('');
         }
         
         function renderYearCalendar() {
