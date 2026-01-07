@@ -1113,6 +1113,12 @@
                     weeklyReports: loaded.weeklyReports || []
                 };
                 
+                // Clean up orphaned session state
+                if (!tracker.isStudying) {
+                    tracker.startTime = null;
+                    tracker.currentTask = null;
+                }
+                
                 console.log('✅ Tracker updated:', {
                     sessions: tracker.sessions.length,
                     days: Object.keys(tracker.history).length
