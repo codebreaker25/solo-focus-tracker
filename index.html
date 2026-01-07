@@ -1677,7 +1677,6 @@
             const avgMs = daysWorked > 0 ? totalMs / daysWorked : 0;
             
             // Count sessions in current year only
-            const currentYear = new Date().getFullYear();
             const sessionsThisYear = tracker.sessions.filter(s => 
                 new Date(s.endTime).getFullYear() === currentYear
             ).length;
