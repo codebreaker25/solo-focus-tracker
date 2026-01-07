@@ -1055,11 +1055,12 @@
         const db = getDatabase(app);
         const userRef = ref(db, 'userData');
         
+    </script>
+    <script>
+        // FIREBASE SETTINGS (accessible to all scripts)
         let cloudSyncEnabled = false; // DISABLED until data stable
         let lastSyncTime = null;
         
-    </script>
-    <script>
         // DATA STRUCTURE
         let tracker = {
             isStudying: false,
@@ -1228,7 +1229,9 @@
             tracker.currentTask = taskInput.trim();
             tracker.currentCategory = categoryInput?.trim() || null;
             saveData();
-            render();
+            
+            // Force UI update after prompt
+            setTimeout(() => render(), 0);
         }
         
         function stopSession() {
@@ -1290,7 +1293,9 @@
             tracker.startTime = null;
             
             saveData();
-            render();
+            
+            // Force UI update
+            setTimeout(() => render(), 0);
         }
         
         function toggleGoalInput() {
