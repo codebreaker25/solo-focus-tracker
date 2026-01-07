@@ -176,6 +176,99 @@
             font-weight: 500;
         }
         
+        .task-category {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 12px;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        /* Task Templates Dropdown */
+        .task-selector {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        
+        .template-dropdown {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .template-dropdown:hover {
+            border-color: var(--accent);
+            background: var(--card-hover);
+        }
+        
+        .template-dropdown:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+        }
+        
+        .quick-start-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            color: var(--bg);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .quick-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
+        }
+        
+        /* Productivity Score */
+        .score-badge {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: var(--card);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(0, 255, 136, 0.2);
+        }
+        
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1;
+        }
+        
+        .score-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+        
         /* Timers */
         .timers {
             display: grid;
@@ -782,12 +875,17 @@
                 </div>
             </div>
             <div class="status-badge" id="status-badge">OFFLINE</div>
+            <div class="score-badge" id="score-badge">
+                <div class="score-value" id="score-value">0</div>
+                <div class="score-label">Score</div>
+            </div>
         </div>
         
         <!-- Current Task -->
         <div class="current-task-card" id="task-card">
             <div class="task-label">Current Focus</div>
             <div class="task-display" id="task-display">No active task</div>
+            <span class="task-category" id="task-category" style="display: none;"></span>
         </div>
         
         <!-- Timers -->
@@ -804,6 +902,12 @@
         
         <!-- Controls -->
         <div class="controls">
+            <div class="task-selector" style="grid-column: span 2;">
+                <select class="template-dropdown" id="task-template-select" onchange="handleTemplateSelect()">
+                    <option value="">➕ New Task / Select Template...</option>
+                </select>
+            </div>
+            
             <button class="btn-start" id="btn-toggle" onclick="toggleTimer()">Start Focus</button>
             <button class="btn-goal" id="btn-goal" onclick="toggleGoalInput()">Set Goal</button>
             
@@ -874,11 +978,14 @@
             isStudying: false,
             startTime: null,
             currentTask: null,
+            currentCategory: null,
             dailyGoal: 3600000, // 1 hour default
             history: {},        // { "2026-01-07": ms }
             goals: {},          // { "2026-01-07": ms }
             goalLocks: {},      // { "2026-01-07": true }
-            sessions: []        // [{ task, startTime, endTime, duration }]
+            sessions: [],       // [{ task, category, startTime, endTime, duration }]
+            taskTemplates: [],  // [{ name, category, lastUsed }]
+            weeklyReports: []   // [{ weekStart, weekEnd, data }]
         };
         
         let updateInterval = null;
@@ -886,6 +993,8 @@
         // INITIALIZATION
         function init() {
             loadData();
+            populateTemplates();
+            checkWeeklyReport();
             render();
             
             // Update every second if studying
@@ -900,7 +1009,14 @@
         function loadData() {
             const saved = localStorage.getItem('focusTracker');
             if (saved) {
-                tracker = JSON.parse(saved);
+                const loaded = JSON.parse(saved);
+                // Ensure new properties exist
+                tracker = {
+                    ...loaded,
+                    currentCategory: loaded.currentCategory || null,
+                    taskTemplates: loaded.taskTemplates || [],
+                    weeklyReports: loaded.weeklyReports || []
+                };
             }
         }
         
@@ -918,12 +1034,15 @@
         }
         
         function startSession() {
-            const task = prompt("What are you working on?", tracker.currentTask || "Studying");
-            if (task === null) return;
+            const taskInput = prompt("What are you working on?", tracker.currentTask || "");
+            if (taskInput === null || !taskInput.trim()) return;
+            
+            const categoryInput = prompt("Category (optional):", tracker.currentCategory || "");
             
             tracker.isStudying = true;
             tracker.startTime = Date.now();
-            tracker.currentTask = task;
+            tracker.currentTask = taskInput.trim();
+            tracker.currentCategory = categoryInput?.trim() || null;
             saveData();
             render();
         }
@@ -936,12 +1055,17 @@
             const duration = now - start;
             
             // Save session
-            tracker.sessions.push({
+            const session = {
                 task: tracker.currentTask,
+                category: tracker.currentCategory,
                 startTime: start,
                 endTime: now,
                 duration: duration
-            });
+            };
+            tracker.sessions.push(session);
+            
+            // Save as template
+            saveTaskTemplate(tracker.currentTask, tracker.currentCategory);
             
             // Update history
             const startDay = getDayString(start);
@@ -1007,6 +1131,172 @@
             render();
         }
         
+        // TASK TEMPLATES
+        function saveTaskTemplate(taskName, category) {
+            if (!taskName) return;
+            
+            // Check if template exists
+            const existing = tracker.taskTemplates.find(t => 
+                t.name.toLowerCase() === taskName.toLowerCase() && t.category === category
+            );
+            
+            if (existing) {
+                existing.lastUsed = Date.now();
+                existing.useCount = (existing.useCount || 0) + 1;
+            } else {
+                tracker.taskTemplates.push({
+                    name: taskName,
+                    category: category,
+                    lastUsed: Date.now(),
+                    useCount: 1
+                });
+            }
+            
+            // Keep only top 20 most used
+            tracker.taskTemplates.sort((a, b) => b.useCount - a.useCount);
+            tracker.taskTemplates = tracker.taskTemplates.slice(0, 20);
+            
+            saveData();
+        }
+        
+        function populateTemplates() {
+            const select = document.getElementById('task-template-select');
+            const sorted = [...tracker.taskTemplates].sort((a, b) => b.lastUsed - a.lastUsed);
+            
+            select.innerHTML = '<option value="">➕ New Task / Select Template...</option>';
+            
+            sorted.forEach((template, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                const categoryStr = template.category ? ` [${template.category}]` : '';
+                option.textContent = `${template.name}${categoryStr} (${template.useCount}x)`;
+                select.appendChild(option);
+            });
+        }
+        
+        function handleTemplateSelect() {
+            const select = document.getElementById('task-template-select');
+            const index = parseInt(select.value);
+            
+            if (!isNaN(index) && tracker.taskTemplates[index]) {
+                const template = tracker.taskTemplates[index];
+                quickStartFromTemplate(template);
+            }
+            
+            select.value = '';
+        }
+        
+        function quickStartFromTemplate(template) {
+            if (tracker.isStudying) {
+                if (!confirm('Stop current session and start new one?')) return;
+                stopSession();
+            }
+            
+            tracker.isStudying = true;
+            tracker.startTime = Date.now();
+            tracker.currentTask = template.name;
+            tracker.currentCategory = template.category;
+            
+            template.lastUsed = Date.now();
+            template.useCount++;
+            
+            saveData();
+            render();
+        }
+        
+        // PRODUCTIVITY SCORE
+        function calculateProductivityScore() {
+            const todayStr = getDayString();
+            const todayMs = tracker.history[todayStr] || 0;
+            const todayGoal = tracker.goals[todayStr] || tracker.dailyGoal;
+            const streak = calculateStreak();
+            const todaySessions = tracker.sessions.filter(s => getDayString(s.endTime) === todayStr).length;
+            
+            let score = 0;
+            
+            // Goal completion (40 points)
+            const goalPct = Math.min((todayMs / todayGoal) * 100, 100);
+            score += (goalPct / 100) * 40;
+            
+            // Streak bonus (30 points)
+            score += Math.min(streak * 5, 30);
+            
+            // Session quality (30 points) - multiple sessions better than one long one
+            if (todaySessions > 0) {
+                const avgSessionLength = todayMs / todaySessions;
+                const idealSession = 2 * 3600000; // 2 hours
+                const sessionScore = Math.min((avgSessionLength / idealSession) * 30, 30);
+                score += sessionScore * 0.5; // 50% weight
+                score += Math.min(todaySessions * 3, 15); // Bonus for multiple sessions
+            }
+            
+            return Math.round(Math.min(score, 100));
+        }
+        
+        // WEEKLY REPORTS
+        function checkWeeklyReport() {
+            const now = Date.now();
+            const lastReport = tracker.weeklyReports[tracker.weeklyReports.length - 1];
+            
+            if (!lastReport || (now - lastReport.weekEnd) > (7 * 24 * 60 * 60 * 1000)) {
+                generateWeeklyReport();
+            }
+        }
+        
+        function generateWeeklyReport() {
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - dayOfWeek);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            // Calculate week stats
+            let totalMs = 0;
+            let daysActive = 0;
+            let totalSessions = 0;
+            const categoryBreakdown = {};
+            
+            for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
+                const dateStr = getDayString(d.getTime());
+                const dayMs = tracker.history[dateStr] || 0;
+                totalMs += dayMs;
+                if (dayMs > 0) daysActive++;
+            }
+            
+            tracker.sessions.forEach(session => {
+                if (session.endTime >= weekStart.getTime() && session.endTime <= weekEnd.getTime()) {
+                    totalSessions++;
+                    const cat = session.category || 'Uncategorized';
+                    categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + session.duration;
+                }
+            });
+            
+            const report = {
+                weekStart: weekStart.getTime(),
+                weekEnd: weekEnd.getTime(),
+                totalHours: totalMs / (1000 * 60 * 60),
+                daysActive,
+                totalSessions,
+                categoryBreakdown,
+                avgPerDay: totalMs / 7,
+                generated: Date.now()
+            };
+            
+            tracker.weeklyReports.push(report);
+            
+            // Keep last 12 weeks only
+            if (tracker.weeklyReports.length > 12) {
+                tracker.weeklyReports = tracker.weeklyReports.slice(-12);
+            }
+            
+            saveData();
+            return report;
+        }
+        
         // CALCULATIONS
         function calculateStreak() {
             let streak = 0;
@@ -1068,6 +1358,7 @@
             const badge = document.getElementById('status-badge');
             const taskCard = document.getElementById('task-card');
             const taskDisplay = document.getElementById('task-display');
+            const taskCategory = document.getElementById('task-category');
             const btnToggle = document.getElementById('btn-toggle');
             const btnGoal = document.getElementById('btn-goal');
             const todayStr = getDayString();
@@ -1077,6 +1368,14 @@
                 badge.classList.add('active');
                 taskCard.classList.add('active');
                 taskDisplay.textContent = tracker.currentTask || 'Studying';
+                
+                if (tracker.currentCategory) {
+                    taskCategory.textContent = tracker.currentCategory;
+                    taskCategory.style.display = 'inline-block';
+                } else {
+                    taskCategory.style.display = 'none';
+                }
+                
                 btnToggle.textContent = 'Stop';
                 btnToggle.className = 'btn-stop';
             } else {
@@ -1084,6 +1383,7 @@
                 badge.classList.remove('active');
                 taskCard.classList.remove('active');
                 taskDisplay.textContent = 'No active task';
+                taskCategory.style.display = 'none';
                 btnToggle.textContent = 'Start Focus';
                 btnToggle.className = 'btn-start';
             }
@@ -1102,6 +1402,10 @@
             // Streak
             const streak = calculateStreak();
             document.getElementById('streak-display').textContent = `${streak} day streak`;
+            
+            // Productivity Score
+            const score = calculateProductivityScore();
+            document.getElementById('score-value').textContent = score;
         }
         
         function renderTimers() {
@@ -1219,6 +1523,7 @@
             
             const weekdayMs = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
             const hourDistribution = new Array(24).fill(0);
+            const categoryMs = {};
             
             Object.entries(tracker.history).forEach(([date, ms]) => {
                 if (date.startsWith(currentYear.toString())) {
@@ -1230,14 +1535,22 @@
                 }
             });
             
-            // Analyze session patterns
+            // Analyze session patterns and categories
             tracker.sessions.forEach(session => {
                 const startHour = new Date(session.startTime).getHours();
                 hourDistribution[startHour]++;
+                
+                const cat = session.category || 'Uncategorized';
+                categoryMs[cat] = (categoryMs[cat] || 0) + session.duration;
             });
             
             const avgPerDay = daysWorked > 0 ? totalMs / daysWorked : 0;
             const avgSessionLength = totalSessions > 0 ? totalMs / totalSessions : 0;
+            
+            // Top category
+            const topCategory = Object.entries(categoryMs).sort((a, b) => b[1] - a[1])[0];
+            const topCategoryName = topCategory ? topCategory[0] : 'None';
+            const topCategoryMs = topCategory ? topCategory[1] : 0;
             
             // Find most productive day
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -1260,6 +1573,28 @@
             });
             const completionRate = daysWithGoal > 0 ? (daysMeetingGoal / daysWithGoal) * 100 : 0;
             
+            // Weekly report
+            const lastReport = tracker.weeklyReports[tracker.weeklyReports.length - 1];
+            const weeklyHtml = lastReport ? `
+                <div class="insight-item">
+                    <div class="insight-label">This Week</div>
+                    <div class="insight-value">${lastReport.totalHours.toFixed(1)}h</div>
+                    <div class="insight-desc">${lastReport.totalSessions} sessions across ${lastReport.daysActive} days</div>
+                </div>
+            ` : '';
+            
+            // Category breakdown
+            const categoryHtml = Object.entries(categoryMs).length > 0 ? `
+                <div class="insight-item">
+                    <div class="insight-label">Top Category</div>
+                    <div class="insight-value">${topCategoryName}</div>
+                    <div class="insight-desc">${formatHours(topCategoryMs)} total</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(topCategoryMs / totalMs) * 100}%"></div>
+                    </div>
+                </div>
+            ` : '';
+            
             container.innerHTML = `
                 <div class="insight-item">
                     <div class="insight-label">Average Daily Focus</div>
@@ -1279,6 +1614,8 @@
                     </div>
                 </div>
                 
+                ${categoryHtml}
+                
                 <div class="insight-item">
                     <div class="insight-label">Average Session Length</div>
                     <div class="insight-value">${formatTime(avgSessionLength)}</div>
@@ -1296,6 +1633,8 @@
                     <div class="insight-value">${peakHourStr}</div>
                     <div class="insight-desc">${hourDistribution[peakHour]} sessions started</div>
                 </div>
+                
+                ${weeklyHtml}
                 
                 <div class="insight-item">
                     <div class="insight-label">Current Momentum</div>
@@ -1327,11 +1666,12 @@
                 const sessionHTML = daySessions.map(session => {
                     const startTime = new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const endTime = new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const categoryBadge = session.category ? `<span style="display: inline-block; margin-left: 8px; padding: 2px 8px; background: rgba(0, 255, 136, 0.1); border: 1px solid var(--accent); border-radius: 8px; font-size: 0.7rem; color: var(--accent);">${session.category}</span>` : '';
                     
                     return `
                         <div class="session-item">
                             <div class="session-info">
-                                <div class="session-task">${session.task}</div>
+                                <div class="session-task">${session.task}${categoryBadge}</div>
                                 <div class="session-date">${startTime} - ${endTime}</div>
                             </div>
                             <div class="session-duration">${formatTime(session.duration)}</div>
