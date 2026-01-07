@@ -965,7 +965,7 @@
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="stat-sessions">0</span>
-                    <span class="stat-label">Sessions</span>
+                    <span class="stat-label">Sessions 2026</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-value" id="stat-avg">0h</span>
@@ -1654,8 +1654,14 @@
             
             const avgMs = daysWorked > 0 ? totalMs / daysWorked : 0;
             
+            // Count sessions in current year only
+            const currentYear = new Date().getFullYear();
+            const sessionsThisYear = tracker.sessions.filter(s => 
+                new Date(s.endTime).getFullYear() === currentYear
+            ).length;
+            
             document.getElementById('stat-total').textContent = formatHours(totalMs);
-            document.getElementById('stat-sessions').textContent = tracker.sessions.length;
+            document.getElementById('stat-sessions').textContent = sessionsThisYear;
             document.getElementById('stat-avg').textContent = formatHours(avgMs);
         }
         
