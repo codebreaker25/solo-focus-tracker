@@ -1095,8 +1095,16 @@
         // STORAGE
         function loadData() {
             const saved = localStorage.getItem('focusTracker');
+            console.log('🔍 Loading data...', saved ? 'Found data' : 'No data');
+            
             if (saved) {
                 const loaded = JSON.parse(saved);
+                console.log('📊 Loaded data:', {
+                    sessions: loaded.sessions?.length,
+                    days: Object.keys(loaded.history || {}).length,
+                    isStudying: loaded.isStudying
+                });
+                
                 // Ensure new properties exist
                 tracker = {
                     ...loaded,
@@ -1104,6 +1112,13 @@
                     taskTemplates: loaded.taskTemplates || [],
                     weeklyReports: loaded.weeklyReports || []
                 };
+                
+                console.log('✅ Tracker updated:', {
+                    sessions: tracker.sessions.length,
+                    days: Object.keys(tracker.history).length
+                });
+            } else {
+                console.log('❌ No saved data in localStorage');
             }
             
             // DISABLED: Don't auto-restore from cloud on load to prevent data loss
