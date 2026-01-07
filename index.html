@@ -1106,11 +1106,8 @@
                 };
             }
             
-            // Try to restore from cloud on first load
-            const hasLocalData = saved && JSON.parse(saved).sessions?.length > 0;
-            if (!hasLocalData) {
-                restoreFromCloud(true); // Silent restore
-            }
+            // DISABLED: Don't auto-restore from cloud on load to prevent data loss
+            // Only restore when user manually clicks restore in settings
         }
         
         function saveData() {
