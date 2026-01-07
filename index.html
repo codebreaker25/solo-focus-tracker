@@ -1061,6 +1061,11 @@
         const db = getDatabase(app);
         const userRef = ref(db, 'userData');
         
+        // Make Firebase functions globally accessible
+        window.firebaseSet = set;
+        window.firebaseGet = get;
+        window.firebaseUserRef = userRef;
+        
     </script>
     <script>
         // FIREBASE SETTINGS (accessible to all scripts)
@@ -1149,7 +1154,7 @@
         
         function syncToCloud() {
             try {
-                set(userRef, {
+                window.firebaseSet(window.firebaseUserRef, {
                     ...tracker,
                     lastSync: Date.now()
                 }).then(() => {
@@ -1161,6 +1166,7 @@
                 });
             } catch (err) {
                 console.error('Sync error:', err);
+                updateSyncStatus('🔴 Sync error');
             }
         }
         
@@ -1172,7 +1178,7 @@
         window.restoreFromCloud = function(silent = false) {
             if (!silent) updateSyncStatus('🔄 Restoring...');
             
-            get(userRef).then((snapshot) => {
+            window.firebaseGet(window.firebaseUserRef).then((snapshot) => {
                 if (snapshot.exists()) {
                     const cloudData = snapshot.val();
                     
