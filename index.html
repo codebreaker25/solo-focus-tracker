@@ -861,6 +861,28 @@
             border-radius: 4px;
             transition: width 0.5s ease;
         }
+        
+        /* Settings Button */
+        .settings-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+        
+        .settings-btn:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 8px 32px rgba(0, 255, 136, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -972,6 +994,64 @@
         </div>
     </div>
     
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">⚙️ Settings</div>
+                </div>
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="stats-title">Cloud Sync</div>
+                <div class="insight-item" style="margin-bottom: 20px;">
+                    <div class="insight-label">Firebase Backup</div>
+                    <div class="insight-desc" style="margin-bottom: 12px;">
+                        <span id="sync-status">🟢 Connected & Synced</span>
+                    </div>
+                    <button class="btn-start" onclick="manualSync()" style="width: 100%; margin-bottom: 8px;">🔄 Sync Now</button>
+                    <button class="btn-goal" onclick="restoreFromCloud()" style="width: 100%;">☁️ Restore from Cloud</button>
+                </div>
+                
+                <div class="stats-title">Backup & Export</div>
+                <div class="insight-item">
+                    <div class="insight-label">Local Backup</div>
+                    <div class="insight-desc" style="margin-bottom: 12px;">Download your data as JSON file</div>
+                    <button class="btn-start" onclick="exportData()" style="width: 100%; margin-bottom: 8px;">📥 Export Data</button>
+                    <button class="btn-goal" onclick="document.getElementById('import-file').click()" style="width: 100%;">📤 Import Data</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Settings Button (floating) -->
+    <button class="settings-btn" onclick="openSettings()" title="Settings">⚙️</button>
+    
+    <script type="module">
+        // FIREBASE SETUP
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRCEeANGlACShWB9WACSji2HzNwLlH4mc",
+            authDomain: "codebreaker-focus-tracker.firebaseapp.com",
+            databaseURL: "https://codebreaker-focus-tracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "codebreaker-focus-tracker",
+            storageBucket: "codebreaker-focus-tracker.firebasestorage.app",
+            messagingSenderId: "912824472038",
+            appId: "1:912824472038:web:100beb9ce6d82ef7164627"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const userRef = ref(db, 'userData');
+        
+        let cloudSyncEnabled = true;
+        let lastSyncTime = null;
+        
+    </script>
     <script>
         // DATA STRUCTURE
         let tracker = {
@@ -1018,10 +1098,89 @@
                     weeklyReports: loaded.weeklyReports || []
                 };
             }
+            
+            // Try to restore from cloud on first load
+            const hasLocalData = saved && JSON.parse(saved).sessions?.length > 0;
+            if (!hasLocalData) {
+                restoreFromCloud(true); // Silent restore
+            }
         }
         
         function saveData() {
             localStorage.setItem('focusTracker', JSON.stringify(tracker));
+            
+            // Auto-sync to Firebase
+            if (cloudSyncEnabled) {
+                syncToCloud();
+            }
+        }
+        
+        function syncToCloud() {
+            try {
+                set(userRef, {
+                    ...tracker,
+                    lastSync: Date.now()
+                }).then(() => {
+                    lastSyncTime = Date.now();
+                    updateSyncStatus('🟢 Synced ' + new Date().toLocaleTimeString());
+                }).catch(err => {
+                    console.error('Sync failed:', err);
+                    updateSyncStatus('🔴 Sync failed');
+                });
+            } catch (err) {
+                console.error('Sync error:', err);
+            }
+        }
+        
+        window.manualSync = function() {
+            updateSyncStatus('🔄 Syncing...');
+            syncToCloud();
+        };
+        
+        window.restoreFromCloud = function(silent = false) {
+            if (!silent) updateSyncStatus('🔄 Restoring...');
+            
+            get(userRef).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const cloudData = snapshot.val();
+                    
+                    // Merge cloud data with local
+                    tracker = {
+                        ...cloudData,
+                        currentCategory: cloudData.currentCategory || null,
+                        taskTemplates: cloudData.taskTemplates || [],
+                        weeklyReports: cloudData.weeklyReports || []
+                    };
+                    
+                    // Clear active session state
+                    tracker.isStudying = false;
+                    tracker.startTime = null;
+                    
+                    localStorage.setItem('focusTracker', JSON.stringify(tracker));
+                    render();
+                    
+                    if (!silent) {
+                        updateSyncStatus('🟢 Restored from cloud!');
+                        alert('✅ Data restored from cloud successfully!');
+                    }
+                } else {
+                    if (!silent) {
+                        updateSyncStatus('🟡 No cloud data found');
+                        alert('No cloud backup found. Your current data will be uploaded on next save.');
+                    }
+                }
+            }).catch(err => {
+                console.error('Restore failed:', err);
+                if (!silent) {
+                    updateSyncStatus('🔴 Restore failed');
+                    alert('Failed to restore from cloud. Check console for details.');
+                }
+            });
+        };
+        
+        function updateSyncStatus(status) {
+            const statusEl = document.getElementById('sync-status');
+            if (statusEl) statusEl.textContent = status;
         }
         
         // CORE FUNCTIONS
@@ -1705,6 +1864,63 @@
         function closeDayModal() {
             document.getElementById('day-modal').classList.remove('open');
         }
+        
+        // SETTINGS MODAL
+        window.openSettings = function() {
+            document.getElementById('settings-modal').classList.add('open');
+            updateSyncStatus(lastSyncTime ? `🟢 Last sync: ${new Date(lastSyncTime).toLocaleTimeString()}` : '🟡 Not synced yet');
+        };
+        
+        window.closeSettings = function() {
+            document.getElementById('settings-modal').classList.remove('open');
+        };
+        
+        // EXPORT/IMPORT
+        window.exportData = function() {
+            const dataStr = JSON.stringify(tracker, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `focus-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+        
+        window.importData = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (confirm('⚠️ This will replace your current data. Continue?')) {
+                        tracker = {
+                            ...imported,
+                            currentCategory: imported.currentCategory || null,
+                            taskTemplates: imported.taskTemplates || [],
+                            weeklyReports: imported.weeklyReports || []
+                        };
+                        
+                        // Clear active session
+                        tracker.isStudying = false;
+                        tracker.startTime = null;
+                        
+                        saveData();
+                        render();
+                        populateTemplates();
+                        alert('✅ Data imported successfully!');
+                    }
+                } catch (err) {
+                    alert('❌ Invalid backup file');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset input
+        };
         
         // UTILITIES
         function getDayString(ts = Date.now()) {
