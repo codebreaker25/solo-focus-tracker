@@ -1216,9 +1216,20 @@
         function stopSession() {
             if (!tracker.isStudying) return;
             
+            // Immediately set to false to prevent double-calls
+            tracker.isStudying = false;
+            
             const now = Date.now();
             const start = tracker.startTime;
             const duration = now - start;
+            
+            // Validate session (at least 1 second)
+            if (duration < 1000) {
+                tracker.startTime = null;
+                saveData();
+                render();
+                return;
+            }
             
             // Save session
             const session = {
@@ -1258,7 +1269,6 @@
                 tracker.goals[startDay] = tracker.dailyGoal;
             }
             
-            tracker.isStudying = false;
             tracker.startTime = null;
             
             saveData();
